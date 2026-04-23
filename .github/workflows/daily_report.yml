@@ -2,19 +2,20 @@ name: YouTube Data Collector
 
 on:
   schedule:
-    # 毎時0分（1時間おき）に実行
-    - cron: '0 * * * *'
-  workflow_dispatch: # 手動実行ボタンも残しておくと便利です
+    - cron: '0 * * * *' # 毎時0分に実行
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # GitHubにファイルを書き込む許可
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # v3からv4に更新
+        with:
+          fetch-depth: 0 # すべての履歴を取得して競合を防ぐ
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -34,7 +35,10 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add youtube_stats.csv
-          # ここで最新の状態を強制的に取り込む(pull)設定を追加します
+          # 強制的にリモートの最新状態を取り込んでから、自分の変更を乗せる
           git pull --rebase origin main
-          git commit -m "Update stats" || exit 0
-          git push origin main
+          # もし変更があればコミットしてプッシュする
+          if ! git diff --cached --exit-code; then
+            git commit -m "Update stats"
+            git push origin main
+          fi
