@@ -2,55 +2,47 @@ name: YouTube Data Collector
 
 on:
   schedule:
-    - cron: '0 * * * *' # 1時間おき（毎時0分）に実行
-  workflow_dispatch: # 手動実行ボタンを表示
+    - cron: '0 * * * *' # 1時間おきに実行
+  workflow_dispatch: # 手動実行ボタン
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # GitHubにファイルを書き込む権限を与える
     permissions:
       contents: write
 
     steps:
-      # 1. リポジトリのコードをチェックアウト（履歴をすべて取得して競合を防ぐ）
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Pythonのセットアップ
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # 3. ライブラリのインストール
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 4. Pythonスクリプトの実行（APIキーを環境変数として渡す）
       - name: Run script
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python main.py
 
-      # 5. データの保存（競合回避ロジック付き）
       - name: Commit and push changes
         run: |
-          # ユーザー設定
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # youtube_stats.csv をステージング
+          # CSVをステージング
           git add youtube_stats.csv
           
-          # 別の実行と重なった場合の競合回避：最新の状態を pull してから自分の変更を乗せる
+          # 競合回避：最新をpullしてからpush
           git pull --rebase origin main
           
-          # もしファイルに変化があればコミットしてプッシュ
           if ! git diff --cached --exit-code; then
             git commit -m "Update youtube stats: $(date +'%Y-%m-%d %H:%M')"
             git push origin main
