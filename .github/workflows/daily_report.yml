@@ -44,7 +44,7 @@ jobs:
           git pull --rebase origin main
           
           if ! git diff --cached --exit-code; then
-            git commit -m "Update youtube stats: $(date +'%Y-%m-%d %H:%M')"
+            git commit -m "youtube stats: $(date +'%Y-%m-%d %H:%M')"
             git push origin main
           else
             echo "No changes to commit"
