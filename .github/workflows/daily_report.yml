@@ -1,21 +1,21 @@
 name: YouTube Data Collector
 
+name: YouTube Data Collector
+
 on:
   schedule:
-    - cron: '0 * * * *' # 毎時0分に実行
-  workflow_dispatch:
+    - cron: '0 0,12 * * *' # 毎日 0時と12時 (UTC) に実行
+  workflow_dispatch: # 手動実行ボタンも追加
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # GitHubにファイルを書き込む許可
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # v3からv4に更新
-        with:
-          fetch-depth: 0 # すべての履歴を取得して競合を防ぐ
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -35,10 +35,36 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add youtube_stats.csv
-          # 強制的にリモートの最新状態を取り込んでから、自分の変更を乗せる
-          git pull --rebase origin main
-          # もし変更があればコミットしてプッシュする
-          if ! git diff --cached --exit-code; then
-            git commit -m "Update stats"
-            git push origin main
-          fi
+          git commit -m "Update stats" || exit 0
+          git push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHubにファイルを書き込む許可
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: python main.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add youtube_stats.csv
+          git commit -m "Update stats" || exit 0
+          git push
