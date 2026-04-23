@@ -34,5 +34,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add youtube_stats.csv
+          # ここで最新の状態を強制的に取り込む(pull)設定を追加します
+          git pull --rebase origin main
           git commit -m "Update stats" || exit 0
-          git push
+          git push origin main
